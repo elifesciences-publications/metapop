@@ -1,0 +1,40 @@
+Metapopulation ecology links antibiotic resistance, consumption
+and patient transfers in a network of hospital wards
+
+Shapiro et al. 2019
+(c) Jean-Philippe Rasigade, Julie T Shapiro
+Université Claude Bernard Lyon 1
+CIRI Inserm U1111
+
+##################################################################
+Accompanying software code and data.
+
+## System requirements:
+
+R v3.6.0
+R packages:
+    data.table
+    dplyr
+    iNEXT
+    tidyr
+    beeswarm
+    visreg
+
+SVG viewer such as Inkscape.
+Code was tested under Windows 10 environment.
+
+Typical install time: 5 minutes for package installation.
+
+## Instructions and file contents:
+
+File rawdata.Rdata contains the required data for all
+analyses, in R format.
+
+Scripts F01 to F06 are intended to be run sequentially. Each
+script generates either a dataset needed by the next scripts
+or a figure/table of results. Figures are generated in SVG format.
+
+Expected run time: 10 minutes.
+
+Reproduction instructions are included in script files.
+
