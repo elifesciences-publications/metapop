@@ -236,11 +236,12 @@ dev.off()
 
 # Use visreg package to show the response curve of number of infection episodes 
 # to consumption of specific antibiotic classes
-# First line = 3GCR, second line = CR, columns = 3GC, Carba, antipseudomonal 3GC, TZP
+# First line = 3GCR, second line = CR, columns = 3GC, Carba, TZP
+# Third line = histogram of 3GC, Carba, TZP use
 
-svg(file = "visreg_pooled.svg", 8, 4)
+svg(file = "visreg_pooled.svg", 6, 6)
 {
-  par(mfrow = c(2, 4))
+  par(mfrow = c(3, 3))
   par(mar = c(4, 4, 1, 1))
   
   visreg(c3gR.mod2, "ddd_c3g_classic", scale=c("response"),xlab="CTX/CRO use (ddd/bed/y)",ylab="No. 3GCR episodes/ward/y",xlim = c(-6,6)*1.1, ylim=c(0,12), rug = F, xaxt = "n")
@@ -248,10 +249,6 @@ svg(file = "visreg_pooled.svg", 8, 4)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
   
   visreg(c3gR.mod2, "ddd_carba", scale=c("response"),xlab="IPM/MEM use (ddd/bed/y)",ylab="No. 3GCR episodes/ward/y",xlim = c(-6,6)*1.1,ylim=c(0,12), rug = F, xaxt = "n")
-  xseq <- seq(-2,2,1)
-  axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
-  
-  visreg(c3gR.mod2, "ddd_c3g_pyo", scale=c("response"),xlab="CTZ/FEP use (ddd/bed/y)",ylab="No. 3GCR episodes/ward/y",xlim = c(-6,6)*1.1, ylim=c(0,12), rug = F, xaxt = "n")
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
   
@@ -263,16 +260,102 @@ svg(file = "visreg_pooled.svg", 8, 4)
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
   
-  visreg(carbaR.mod2, "ddd_carba", scale=c("response"),xlab="IPM/MEM use (ddd/bed/y)",ylab="No. CR episodes/ward/y", xlim = c(-6,6)*1.1, ylim=c(0,5), rug = F, xaxt = "n")
-  xseq <- seq(-2,2,1)
-  axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
   
-  visreg(carbaR.mod2, "ddd_c3g_pyo", scale=c("response"),xlab="CTZ/FEP use (ddd/bed/y)",ylab="No. CR episodes/ward/y",xlim = c(-6,6)*1.1, ylim=c(0,5), rug = F, xaxt = "n")
+  visreg(carbaR.mod2, "ddd_carba", scale=c("response"),xlab="IPM/MEM use (ddd/bed/y)",ylab="No. CR episodes/ward/y", xlim = c(-6,6)*1.1, ylim=c(0,5), rug = F, xaxt = "n")
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
   
   visreg(carbaR.mod2, "ddd_bsp", scale=c("response"),xlab="TZP use (ddd/bed/y)",ylab="No. CR episodes/ward/y",xlim = c(-6,6)*1.1,ylim=c(0,5), rug = F, xaxt = "n")
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  
+  hist(c3g.dat$ddd_c3g_classic,xlab="CTX/CRO use (ddd/bed/y)",main="",
+          freq=FALSE, ylim=c(0,0.5),col="lightgrey", xaxt="n")
+  xseq <- seq(-3,2,1)
+  axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  
+  
+  hist(c3g.dat$ddd_carba,xlab="IPM/MEM use (ddd/bed/y)",main="",
+       freq=FALSE, ylim=c(0,0.5),col="lightgrey", xaxt="n")
+  xseq <- seq(-3,2,1)
+  axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  
+ 
+  hist(c3g.dat$ddd_bsp,xlab="TZP use (ddd/bed/y)",main="",
+       freq=FALSE,ylim=c(0,0.5),col="lightgrey", xaxt="n")
+  xseq <- seq(-3,2,1)
+  axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  
+  
 }
 dev.off()
+
+# Find resulting figures in files glm_pooled_pane1.svg and visreg_pooled.svg
+
+#####################################################################
+# Calculate the model coefficients for pooled 3GCR and Carba-R 
+# infections:
+
+#Begin with dataframe "mod.dat.raw" from F03 script
+load("modeldata.Rdata")
+head(mod.dat.raw)
+
+# Make a list of all taxa that are resistant to either 3GC or carbapenems
+c3g.carb.list <- c("ESCCOL_C3G_R","ESCCOL_CARBA_R", "KLEPNE_C3G_R",
+                   "KLEPNE_CARBA_R","ENTCLO_C3G_R", "ENTCLO_CARBA_R",
+                   "PSEAER_S","PSEAER_CARBA_R","ACIBAU_CARBA_S", 
+                   "ACIBAU_CARBA_R","ENCFAC_VANCO_S","ENCFAC_VANCO_R",
+                "STAAUR_OXA_R")
+
+# Subset the data to include only taxa in the c3g.carb.list 
+c3gR.carb.dat.raw <- subset(mod.dat.raw, BacType %in% c3g.carb.list)
+
+# Sum N_patients, C_control, and S_connectivity of different variants by ward
+c3gR.carb.dat.raw2 <- c3gR.carb.dat.raw %>%
+  group_by(ward) %>%
+  summarize(C_controlC3G.Car = sum(C_control),
+            N_patsC3G.Car = sum(N_patients),
+            S_connC3G.Car = sum(S_connectivity))
+
+# Select ward-level variables
+ddd.dat.c3g.carba <- select(c3gR.dat.raw, ward, n_beds, PatStat,  starts_with("ddd_"))
+ddd.dat.c3g.carba <- distinct(ddd.dat.c3g.carba)
+
+# Join the summed N, S, C data by taxa to the ward-level variables
+c3gR.carb.dat.raw3 <- left_join(c3gR.carb.dat.raw2, ddd.dat.c3g.carba, by="ward")
+
+# Change data.frame to a data.table
+c3gR.carb.dat.raw3 <- data.table(c3gR.carb.dat.raw3)
+
+# Select the columns that will be log2 transformed
+logVars.c3g.carba <- c("C_controlC3G.Car", "S_connC3G.Car",
+                       "ddd_total","ddd_carba", "ddd_c1g_c2g",
+                 "ddd_c3g_classic","ddd_c3g_pyo","ddd_glyco",
+                 "ddd_oxa","ddd_fq","ddd_bsp","ddd_nsp","n_beds")
+
+# Transform the selected variables using data.table package
+# To avoid infinity values from log-transformation, 
+# first convert all 0 values to 1/2 the non-zero minimum value
+# Then apply a log-2 transformation
+c3g.carba.dat <- c3gR.carb.dat.raw3[ , (logVars.c3g.carba) := lapply(.SD, function(x) {
+  xmin <- min(x[x > 0])
+  x[x < xmin] <- xmin / 2
+  return(log2(x))
+}) , .SDcol = logVars.c3g.carba]
+
+
+# Run the pooled 3GCR - Carba-R model using specific antibiotics
+c3gR.carba.mod2 <- glm(N_patsC3G.Car ~ C_controlC3G.Car + S_connC3G.Car +
+                   ddd_carba + ddd_c1g_c2g
+                 + ddd_c3g_classic + ddd_c3g_pyo + ddd_glyco + ddd_oxa
+                 + ddd_fq + ddd_bsp + ddd_nsp , 
+                 family = poisson, data = c3g.carba.dat)
+
+summary(c3gR.carba.mod2)
+
+# Calculate the confidence intervals for each variable in the model:
+confint(c3gR.carba.mod2)
+
+# Bind confidence interval to beta coefficient from the model 
+# (to improve readability)
+cbind(coefficients(c3gR.carba.mod2)*100, confint(c3gR.carba.mod2)*100)

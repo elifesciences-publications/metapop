@@ -21,7 +21,7 @@ library(data.table)
 library(dplyr) # Tested with version 0.8.0.1 for R version 3.6.0
 library(tidyr) #Tested with version 0.8.3 for R version 3.6.0
 
-load("abundance.Rdata")
+load(file="abundance.Rdata")
 
 #Select and gather variables from abundance dataframe
 #that are specific to each bacteria type: N_patients, Control, Connectivity
