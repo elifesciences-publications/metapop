@@ -197,9 +197,9 @@ ord <- T
 errorbar_width <- 0.04
 
 ###################################################################
-# Generate figure
+# Generate Figure 2 
 
-# Panel 1 - all taxa except Abau and Efae
+# Panel 1 (Figure 2a) - all taxa except Abau and Efae
 svg(file = "atbmod_pane1.svg", 4, 8)
 {
   showpanes <- function(yl) { 
@@ -284,7 +284,7 @@ svg(file = "atbmod_pane1.svg", 4, 8)
 }
 dev.off()
 
-# Panel 2 - Abau and Efae
+# Panel 2 (Figure 2b) - Abau and Efae
 svg(file = "atbmod_pane2.svg", 1.9, 8)
 {
   showpanes <- function(yl) {
@@ -360,9 +360,9 @@ dev.off()
 
 #' #############################################################
 #' 
-#' Performs computations to examine possibly causal associations between use of 
+#' Performs computations to examine possibly selective associations between use of 
 #' each class of antibiotics and the number of infection episodes. Creates
-#' Figure 3b.
+#' Figure 2c.
 #' 
 
 # Extract GLM results
@@ -371,9 +371,9 @@ names(models) <- unlist(lapply(ResultList2, function(x) x$name))
 
 print(models)
 
-# Define possibly causal associations between infection incidence
+# Define possibly selective associations between infection incidence
 # and classes of antibiotics
-possibly_causal <- list(
+possibly_selective <- list(
   ESCCOL_C3G_R = "ddd_c3g_classic",
   ESCCOL_CARBA_R = "ddd_carba",
   KLEPNE_C3G_R = "ddd_c3g_classic",
@@ -390,7 +390,7 @@ possibly_causal <- list(
   STAAUR_OXA_R = c("ddd_c1g_c2g", "ddd_oxa", "ddd_nsp")
 )
 
-# Categorize antibiotic/variant associations as possibly causal or
+# Categorize antibiotic/variant associations as possibly selective or
 # not, with its beta coefficient and lower and upper confidence intervals from
 # the antibiotic models in ResultsList2. 
 pcmodel <- sapply(names(models), function(bug) {
@@ -402,39 +402,39 @@ pcmodel <- sapply(names(models), function(bug) {
       ][
         , pc := FALSE
         ]
-  pcfilt <- which(dt$drug %in% possibly_causal[[bug]])
+  pcfilt <- which(dt$drug %in% possibly_selective[[bug]])
   dt[ pcfilt, pc := TRUE]
   return(dt)
 }, simplify = F) %>% rbindlist
 
 
 #Set up display labels for the boxplot (below)
-#Possibly causal are labelled as "Poss. causal", all others labelled "Other"
-pcmodel[, pc_display := c("Other", "Poss. causal")[pc + 1]][
-  , pc_display := factor(pc_display, levels = c("Poss. causal", "Other"))
+#Possibly selective are labelled as "Poss. selective", all others labelled "Other"
+pcmodel[, pc_display := c("Other", "Poss. selective")[pc + 1]][
+  , pc_display := factor(pc_display, levels = c("Poss. selective", "Other"))
   ]
 
 # Boxplot showing the difference in the magnitude of the beta coefficients
-# for possibly causal associations vs. Other
+# for possibly selective associations vs. Other
 {
-  svg("possiblycausal_boxplot_2.svg", 4, 6)
+  svg("possiblyselective_boxplot_2.svg", 4, 6)
   boxplot(betas ~ pc_display, pcmodel, ylim = c(-0.1, 0.4), outline = F, xlab = "", ylab = "Regression coefficient")
   beeswarm(betas ~ pc_display, pcmodel, method = "hex", add = T, pch = 19, col = c(rgb(0.8,0,0,.2), rgb(0,0,.8,.2)))
   dev.off()  
 }
 
 
-# Run wilcox.test on the beta coefficients to compare Possibly causal associations
+# Run wilcox.test on the beta coefficients to compare Possibly selective associations
 # to others/
 wilcox.test(betas ~ pc_display, pcmodel)
 
-# Calculate the median value for beta coefficients for Possible Causal associations and Other
+# Calculate the median value for beta coefficients for Possible Selective associations and Other
 pcmodel[, .(med = median(betas)), by = pc]
 
-# Compare coefficient significance for possibly causal associations and others
+# Compare coefficient significance for possibly selective associations and others
 fisher.test(table(pcmodel$pc_display, pcmodel$`2.5 %` <= 0))
 
-# Find resulting figures in files atbmod_pane1.svg, atbmod_pane2.svg and possiblycausal_boxplot_2.svg
+# Find resulting figures in files atbmod_pane1.svg, atbmod_pane2.svg and possiblyselective_boxplot_2.svg
 
 #####################################################################################################
 

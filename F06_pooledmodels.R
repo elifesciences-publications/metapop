@@ -135,9 +135,9 @@ carbaR.mod2 <- glm(N_patsCarba ~ C_controlCarba + S_connCarba +
 
 #' #############################################################
 #' 
-#' Creates Figure 4, showing the coefficients for the global
-#' model and graphs the relationship between the consumption of specific
-#' antibiotics and infection incidence
+#' Creates Figure 3, showing the coefficients for the global
+#' model (Figure 3a) and graphs the relationship between the consumption of specific
+#' antibiotics and infection incidence (Figure 3b)
 #' 
 
 # Combine 3GCR and CR models into a single list
@@ -164,7 +164,7 @@ names(coef.combined.atbs) <- c("C3GR","CarbaR")
 
 ###Coefficients #############################
 
-# Prepare Figure:
+# Prepare Figure 3a:
 # Extract from each list (3GCR and CR) the beta coefficient and lower and upper confidence intervals
 # for each variable
 {
@@ -235,56 +235,80 @@ dev.off()
 
 
 # Use visreg package to show the response curve of number of infection episodes 
-# to consumption of specific antibiotic classes
-# First line = 3GCR, second line = CR, columns = 3GC, Carba, TZP
-# Third line = histogram of 3GC, Carba, TZP use
+# to consumption of specific antibiotic classes 
+# First line = 3GCR, second line = CR, columns = 3GC, Carba, TZP (Figure 3a and 3b)
+# Third line = histogram of 3GC, Carba, TZP use (Figure 3c)
+
+#Print the coefficient and confidence interval for each
+prettyConfint <- function(response, drug) {
+  beta <- sprintf("ß = %.1f (%.1f, %.1f)", coef.combined.atbs[[response]][drug, 3]*100, coef.combined.atbs[[response]][drug, 1]*100, coef.combined.atbs[[response]][drug, 2]*100)
+ 
+}  
 
 svg(file = "visreg_pooled.svg", 6, 6)
 {
   par(mfrow = c(3, 3))
   par(mar = c(4, 4, 1, 1))
+  coef_legend_cex = 0.9
   
   visreg(c3gR.mod2, "ddd_c3g_classic", scale=c("response"),xlab="CTX/CRO use (ddd/bed/y)",ylab="No. 3GCR episodes/ward/y",xlim = c(-6,6)*1.1, ylim=c(0,12), rug = F, xaxt = "n")
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  legend("topleft", title = prettyConfint("C3GR", "ddd_c3g_classic"), legend = "", bty = "n", cex = coef_legend_cex)
   
   visreg(c3gR.mod2, "ddd_carba", scale=c("response"),xlab="IPM/MEM use (ddd/bed/y)",ylab="No. 3GCR episodes/ward/y",xlim = c(-6,6)*1.1,ylim=c(0,12), rug = F, xaxt = "n")
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  legend("topleft", title = prettyConfint("C3GR", "ddd_carba"), legend = "", bty = "n", cex = coef_legend_cex)
   
   visreg(c3gR.mod2, "ddd_bsp", scale=c("response"),xlab="TZP use (ddd/bed/y)",ylab="No. 3GCR episodes/ward/y",xlim = c(-6,6)*1.1,ylim=c(0,12), rug = F, xaxt = "n")
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  legend("topleft", title = prettyConfint("C3GR", "ddd_bsp"), legend = "", bty = "n", cex = coef_legend_cex)
   
   visreg(carbaR.mod2, "ddd_c3g_classic", scale=c("response"),xlab="CTX/CRO use (ddd/bed/y)",ylab="No. CR episodes/ward/y",xlim = c(-6,6)*1.1, ylim=c(0,5), rug = F, xaxt = "n")
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  legend("topleft", title = prettyConfint("CarbaR", "ddd_c3g_classic"), legend = "", bty = "n", cex = coef_legend_cex)
   
   
   visreg(carbaR.mod2, "ddd_carba", scale=c("response"),xlab="IPM/MEM use (ddd/bed/y)",ylab="No. CR episodes/ward/y", xlim = c(-6,6)*1.1, ylim=c(0,5), rug = F, xaxt = "n")
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  legend("topleft", title = prettyConfint("CarbaR", "ddd_carba"), legend = "", bty = "n", cex = coef_legend_cex)
   
   visreg(carbaR.mod2, "ddd_bsp", scale=c("response"),xlab="TZP use (ddd/bed/y)",ylab="No. CR episodes/ward/y",xlim = c(-6,6)*1.1,ylim=c(0,5), rug = F, xaxt = "n")
   xseq <- seq(-2,2,1)
   axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  legend("topleft", title = prettyConfint("CarbaR", "ddd_bsp"), legend = "", bty = "n", cex = coef_legend_cex)
   
-  hist(c3g.dat$ddd_c3g_classic,xlab="CTX/CRO use (ddd/bed/y)",main="",
-          freq=FALSE, ylim=c(0,0.5),col="lightgrey", xaxt="n")
+
+  hist_xlim <- c(log10(0.01), log10(100))
+  hist_col <- "azure2"
+  
+  hist_c3g_classic <- c3g.dat$ddd_c3g_classic / log(10) * log(2)
+  hist_c3g_classic[hist_c3g_classic == min(hist_c3g_classic)] <- hist_xlim[1]
+  
+  hist_carba <- c3g.dat$ddd_carba / log(10) * log(2)
+  hist_carba[hist_carba == min(hist_carba)] <- hist_xlim[1]
+  
+  hist_bsp <- c3g.dat$ddd_bsp / log(10) * log(2)
+  hist_bsp[hist_bsp == min(hist_bsp)] <- hist_xlim[1]
+  
+  hist(hist_c3g_classic,xlab="CTX/CRO use (ddd/bed/y)",main="",
+       freq=TRUE,xlim = hist_xlim, ylim=c(0,180),breaks=12,col=hist_col, xaxt="n")
   xseq <- seq(-3,2,1)
-  axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  axis(1, at = xseq, labels = 10^xseq)
   
-  
-  hist(c3g.dat$ddd_carba,xlab="IPM/MEM use (ddd/bed/y)",main="",
-       freq=FALSE, ylim=c(0,0.5),col="lightgrey", xaxt="n")
+  hist(hist_carba,xlab="IPM/MEM use (ddd/bed/y)",main="",
+       freq=TRUE,xlim = hist_xlim, ylim=c(0,180),breaks=12,col=hist_col, xaxt="n")
   xseq <- seq(-3,2,1)
-  axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  axis(1, at = xseq, labels = 10^xseq)
   
- 
-  hist(c3g.dat$ddd_bsp,xlab="TZP use (ddd/bed/y)",main="",
-       freq=FALSE,ylim=c(0,0.5),col="lightgrey", xaxt="n")
+  hist(hist_bsp,xlab="TZP use (ddd/bed/y)",main="",
+       freq=TRUE,xlim = hist_xlim, ylim=c(0,180),breaks=12,col=hist_col, xaxt="n")
   xseq <- seq(-3,2,1)
-  axis(1, at = xseq/log(2)*log(10), labels = 10^xseq)
+  axis(1, at = xseq, labels = 10^xseq)
   
   
 }

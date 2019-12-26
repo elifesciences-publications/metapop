@@ -159,9 +159,9 @@ ord <- T
 errorbar_width <- 0.04
 
 ###################################################################
-# Generate figure
+# Generate Figure 1
 
-# Panel 1 - all taxa except Abau and Efae
+# Panel 1 (Figure 1a) - all taxa except Abau and Efae
 svg(file = "glm_global_pane1.svg", 4, 6)
 {
   showpanes <- function(yl) {
@@ -210,7 +210,7 @@ svg(file = "glm_global_pane1.svg", 4, 6)
 dev.off()
 
 
-# Panel 2 - Abau and Efae
+# Panel 2 (Figure 1b) - Abau and Efae
 svg(file = "glm_global_pane2.svg", 1.9, 6)
 {
   par(mfrow = c(5,1))
