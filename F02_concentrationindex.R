@@ -25,7 +25,7 @@ library(data.table)
 load("abundance.Rdata") #Output dataframe from F01_dataprep.R script
 
 ###############################################################
-# Concentration index for infection episodes 
+# Concentration index for infection episodes - TABLE 1.
 
 #Select infection episodes from abundance
 conc.bact <- select(abundance, starts_with("N_", ignore.case = FALSE))
@@ -49,7 +49,9 @@ t.conc.bact4 <- as.list(setNames(split(t.conc.bact3, seq(nrow(t.conc.bact3))), r
 
 #Use the ChaoSimpson function in the iNEXT package to calculate the 
 #asymptotic dispersion index and 95% confidence intervals for each bacterial taxon + resistance profile
-bact.disp.index <- ChaoSimpson(t.conc.bact4, datatype="abundance", B = 10000)
+# Parameter B controls no. of bootstrap replicates. Set B = 200 for fast estimation but
+# use B = 10,000 to obtain stable estimates for publication.
+bact.disp.index <- ChaoSimpson(t.conc.bact4, datatype="abundance", B = 200)
 
 # Note that this is a bootstrap procedure, confidence intervals can vary slightly
 # from one run to another.
@@ -61,7 +63,7 @@ bact.conc.index <- data.table(bact.disp.index)[
 print(bact.conc.index[])
 
 ###################################################################################################
-# Concentration index for the consumption of antibiotic classes
+# Concentration index for the consumption of antibiotic classes - TABLE 2
 
 #Select consumption of each antibiotic from "abundance" dataframe
 conc.atb <- abundance %>%
@@ -87,10 +89,9 @@ t.conc.atb4 <- as.list(setNames(split(t.conc.atb3, seq(nrow(t.conc.atb3))), rown
 
 #Use the ChaoSimpson function in the iNext package to calculate the 
 #asymptotic dispersion index and 95% confidence intervals for each class of antibiotics
-atb.disp.index <- ChaoSimpson(t.conc.atb4, datatype="abundance", B = 10000)
-
-# Note that this is a bootstrap procedure, confidence intervals can vary slightly
-# from one run to another.
+# Parameter B controls no. of bootstrap replicates. Set B = 200 for fast estimation but
+# use B = 10,000 to obtain stable estimates for publication.
+atb.disp.index <- ChaoSimpson(t.conc.atb4, datatype="abundance", B = 200)
 
 # Take complement of dispersion index to obtain concentration index in percents
 atb.conc.index <- data.table(atb.disp.index)[

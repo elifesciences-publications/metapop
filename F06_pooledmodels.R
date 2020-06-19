@@ -39,6 +39,7 @@ c3gR.dat.raw2 <- c3gR.dat.raw %>%
             S_connC3G = sum(S_connectivity))
 
 # Select ward-level variables
+# NOTE: Detach package MASS (conflicts with dplyr) if code below produces error
 ddd.dat.c3g <- select(c3gR.dat.raw, ward, n_beds, PatStat,  starts_with("ddd_"))
 ddd.dat.c3g <- distinct(ddd.dat.c3g)
 
@@ -50,7 +51,7 @@ c3g.R.dat.raw3 <- data.table(c3g.R.dat.raw3)
 
 # Select the columns that will be log2 transformed
 logVars.c3g <- c("C_controlC3G", "S_connC3G","ddd_total","ddd_carba", "ddd_c1g_c2g",
-                 "ddd_c3g_classic","ddd_c3g_pyo","ddd_glyco","ddd_oxa","ddd_fq","ddd_bsp","ddd_nsp","n_beds")
+                 "ddd_c3g_classic","ddd_c3g_pyo","ddd_glyco","ddd_oxa","ddd_fq","ddd_bsp","ddd_nsp", "ddd_amin", "ddd_amox", "n_beds")
 
 # Transform the selected variables using data.table package
 # To avoid infinity values from log-transformation, 
@@ -65,14 +66,14 @@ c3g.dat <- c3g.R.dat.raw3[ , (logVars.c3g) := lapply(.SD, function(x) {
 
 # Global 3GCR model
 c3gR.mod1 <- glm(N_patsC3G ~ C_controlC3G + n_beds + S_connC3G + ddd_total + PatStat, 
-                 family = poisson, data = c3g.dat)
+                 family = quasipoisson, data = c3g.dat)
 
 # Run the 3GCR model using specific antibiotics
 c3gR.mod2 <- glm(N_patsC3G ~ C_controlC3G + S_connC3G +
                    ddd_carba + ddd_c1g_c2g
                  + ddd_c3g_classic + ddd_c3g_pyo + ddd_glyco + ddd_oxa
-                 + ddd_fq + ddd_bsp + ddd_nsp , 
-                 family = poisson, data = c3g.dat)
+                 + ddd_fq + ddd_bsp + ddd_nsp + ddd_amin + ddd_amox, 
+                 family = quasipoisson, data = c3g.dat)
 
 #' #############################################################
 #' 
@@ -109,7 +110,7 @@ carbaR.dat.raw3 <- data.table(carbaR.dat.raw3)
 
 #Select the columns that will be transformed
 logVars.carba <- c("C_controlCarba", "S_connCarba","ddd_total","ddd_carba", "ddd_c1g_c2g",
-                   "ddd_c3g_classic","ddd_c3g_pyo","ddd_glyco","ddd_oxa","ddd_fq","ddd_bsp","ddd_nsp","n_beds")
+                   "ddd_c3g_classic","ddd_c3g_pyo","ddd_glyco","ddd_oxa","ddd_fq","ddd_bsp","ddd_nsp", "ddd_amin", "ddd_amox","n_beds")
 
 # Transform the selected variables using data.table package
 # Note: To avoid infinity values from log-transformation, 
@@ -124,18 +125,19 @@ carbaR.dat <- carbaR.dat.raw3[ , (logVars.carba) := lapply(.SD, function(x) {
 
 # Global CR model
 carbaR.mod1 <- glm(N_patsCarba ~ C_controlCarba + n_beds + S_connCarba + ddd_total + PatStat, 
-                   family = poisson, data = carbaR.dat)
+                   family = quasipoisson, data = carbaR.dat)
 
 # CR model using specific antibiotics
 carbaR.mod2 <- glm(N_patsCarba ~ C_controlCarba + S_connCarba +
                      ddd_carba + ddd_c1g_c2g
                    + ddd_c3g_classic + ddd_c3g_pyo + ddd_glyco + ddd_oxa
-                   + ddd_fq + ddd_bsp + ddd_nsp , 
-                   family = poisson, data = carbaR.dat)
+                   + ddd_fq + ddd_bsp + ddd_nsp + ddd_amin + ddd_amox , 
+                   family = quasipoisson, data = carbaR.dat)
 
 #' #############################################################
 #' 
-#' Creates Figure 3, showing the coefficients for the global
+#' Creates Figure 3, showing the percent change represented by the 
+#' beta coefficients for the global
 #' model (Figure 3a) and graphs the relationship between the consumption of specific
 #' antibiotics and infection incidence (Figure 3b)
 #' 
@@ -150,12 +152,16 @@ combined.atbslist <- list(c3gR.mod2,carbaR.mod2)
 # Calculate 95% confidence interval for each model in each list
 coef.combined.simp <- lapply(combined.simplist, function(x) {
   cis.comb <- confint(x)
-  return(cbind(cis.comb, coefficients(x)))
+  betas <- (exp(coefficients(x)) - 1)*100
+  ci95 <- (exp(cis.comb) - 1)*100
+  return(cbind(ci95, betas))
 }) 
 
 coef.combined.atbs <- lapply(combined.atbslist, function(x) {
   cis.comb <- confint(x)
-  return(cbind(cis.comb, coefficients(x)))
+  betas <- (exp(coefficients(x)) - 1)*100
+  ci95 <- (exp(cis.comb) - 1)*100
+  return(cbind(ci95, betas))
 }) 
 
 # Rename each object in the list
@@ -205,25 +211,25 @@ svg(file = "glm_pooled_pane1.svg", 1.5, 6)
   xl <- c(0.75, 2.25)
   marker.cex <- 1.25
   
-  yl <- c(-0.2,0.2)
+  yl <- c(-15,20)
   plot(coef_ps[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_ps_li[ord], 1:p, coef_ps_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_ps[ord], pch = 19, col = bugcols, cex = marker.cex)
   
-  yl <- c(-0.1,0.1)
+  yl <- c(-15,15)
   plot(coef_n[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Ward size", bty = "n", type = "n")
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_n_li[ord], 1:p, coef_n_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_n[ord], pch = 19, col = bugcols, cex = marker.cex)
   
-  yl <- c(-0.1,0.1)
+  yl <- c(-10,15)
   plot(coef_s[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Connectivity", bty = "n", type = "n")
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_s_li[ord], 1:p, coef_s_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_s[ord], pch = 19, col = bugcols, cex = marker.cex)
   
-  yl <- c(-0.1,0.1)
+  yl <- c(-5,15)
   plot(coef_atb[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Antibiotic use", bty = "n", type = "n")
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_atb_li[ord], 1:p, coef_atb_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
@@ -239,9 +245,9 @@ dev.off()
 # First line = 3GCR, second line = CR, columns = 3GC, Carba, TZP (Figure 3a and 3b)
 # Third line = histogram of 3GC, Carba, TZP use (Figure 3c)
 
-#Print the coefficient and confidence interval for each
+#Print the percentage change represented by beta coefficients and confidence interval for each
 prettyConfint <- function(response, drug) {
-  beta <- sprintf("ÃŸ = %.1f (%.1f, %.1f)", coef.combined.atbs[[response]][drug, 3]*100, coef.combined.atbs[[response]][drug, 1]*100, coef.combined.atbs[[response]][drug, 2]*100)
+  beta <- sprintf("ß = %.1f (%.1f, %.1f)", coef.combined.atbs[[response]][drug, 3], coef.combined.atbs[[response]][drug, 1], coef.combined.atbs[[response]][drug, 2])
  
 }  
 
@@ -355,7 +361,7 @@ c3gR.carb.dat.raw3 <- data.table(c3gR.carb.dat.raw3)
 logVars.c3g.carba <- c("C_controlC3G.Car", "S_connC3G.Car",
                        "ddd_total","ddd_carba", "ddd_c1g_c2g",
                  "ddd_c3g_classic","ddd_c3g_pyo","ddd_glyco",
-                 "ddd_oxa","ddd_fq","ddd_bsp","ddd_nsp","n_beds")
+                 "ddd_oxa","ddd_fq","ddd_bsp","ddd_nsp", "ddd_amin", "ddd_amox","n_beds")
 
 # Transform the selected variables using data.table package
 # To avoid infinity values from log-transformation, 
@@ -372,14 +378,20 @@ c3g.carba.dat <- c3gR.carb.dat.raw3[ , (logVars.c3g.carba) := lapply(.SD, functi
 c3gR.carba.mod2 <- glm(N_patsC3G.Car ~ C_controlC3G.Car + S_connC3G.Car +
                    ddd_carba + ddd_c1g_c2g
                  + ddd_c3g_classic + ddd_c3g_pyo + ddd_glyco + ddd_oxa
-                 + ddd_fq + ddd_bsp + ddd_nsp , 
-                 family = poisson, data = c3g.carba.dat)
+                 + ddd_fq + ddd_bsp + ddd_nsp + ddd_amin + ddd_amox, 
+                 family = quasipoisson, data = c3g.carba.dat)
 
 summary(c3gR.carba.mod2)
 
 # Calculate the confidence intervals for each variable in the model:
 confint(c3gR.carba.mod2)
 
+#Convert raw coefficients and confidence intervals to percentages
+c3gR.carba.betas <- (exp(coefficients(c3gR.carba.mod2)) - 1)*100
+c3gR.carba.mod2.ci95 <- (exp(confint(c3gR.carba.mod2)) - 1)*100
+
 # Bind confidence interval to beta coefficient from the model 
 # (to improve readability)
-cbind(coefficients(c3gR.carba.mod2)*100, confint(c3gR.carba.mod2)*100)
+cbind(c3gR.carba.betas, c3gR.carba.mod2.ci95)
+
+#summary(step(c3gR.carba.mod2))

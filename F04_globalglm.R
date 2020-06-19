@@ -15,6 +15,8 @@
 #' 
 #' 
 
+library(data.table)
+
 load(file = "modeldata.Rdata") # Output from F03_modeldataprep.R
 
 #Begin with "transf.dat" from F03 script.
@@ -32,7 +34,7 @@ for(i in 1:length(taxonName)){
   # this variable will be called to identify each subset of the data
   
   # Run Poisson GLM
-  metab = glm(N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat,subset=selTaxon, family="poisson")
+  metab = glm(N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat,subset=selTaxon, family=quasipoisson)
   
   # Model summary
   summary <- summary(metab)
@@ -46,8 +48,12 @@ for(i in 1:length(taxonName)){
   # Calculate the profile confidence intervals
   ci95 <- confint(metab)
   
+  #Convert raw coefficients and confidence intervals to percentages
+  percents.beta <- (exp(betas) - 1)*100
+  percents.ci <- (exp(ci95) - 1)*100
+  
   # Concatenate beta estimates and 95% CIs
-  betas.cis <- cbind(betas,ci95)  
+  betas.cis <- cbind(percents.beta,percents.ci)
   
   # Gather results
   resList<-list(
@@ -64,11 +70,12 @@ for(i in 1:length(taxonName)){
 }
 
 # Use the [[]] operator to access individual results
-ResultList[[1]]$name
-ResultList[[1]]$betas.cis
+ResultList[[5]]$name
+ResultList[[5]]$betas.cis
 
 ##################################################################################################
-# Figure 2 of beta coefficients and confidence intervals for each variable in each model
+# Figure 1 of percent change represented by beta coefficients 
+# and confidence intervals for each variable in each model
 
 # Extract the betas + CI's table for each element of the list
 beta.cisList <- lapply(ResultList, function (x){unlist(x[['betas.cis']])})
@@ -77,15 +84,10 @@ names.betacisList <- unlist(lapply(ResultList, function(x) x[c('name')]))
 # Apply those names to the list
 names(beta.cisList) <- names.betacisList
 
-# Reorder the elements of the list, needed for consistent variant ordering
-beta.cisList.order <- beta.cisList[c(1,2,3,4,5,6,7,8,9,10,11,16,17,12,13,14,15)]
+# Make a separate list for Abau and Efaec due to much larger confidence intervals
+beta.cisList.a <- beta.cisList[c(1,2,3,4,5,6,7,8,9,10,11,16,17)]
 
-# Make one list of all bacteria except Efaec and Abau, which have wider confidence intervals
-beta.cisList.a <- beta.cisList.order[c(1:13)]
-
-# Separate list for Abau and Efaec due to much larger confidence intervals
-beta.cisList.b <- beta.cisList.order[c(14:17)]
-
+beta.cisList.b <- beta.cisList[c(12,13,14,15)]
 
 # Identify the beta coefficient, lower, and upper confidence intervals for each variable
 # and each variant
@@ -177,28 +179,28 @@ svg(file = "glm_global_pane1.svg", 4, 6)
   
   p <- length(coef_ps)
   
-  yl <- c(-0.75,0.8)
+  yl <- c(-50,110)
   plot(coef_ps[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_ps_li[ord], 1:p, coef_ps_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_ps[ord], pch = 19, col = bugcolors, cex = 1.5)
   
-  yl <- c(-0.9,0.5)
+  yl <- c(-60,50)
   plot(coef_n[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward size", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_n_li[ord], 1:p, coef_n_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_n[ord], pch = 19, col = bugcolors, cex = 1.5)
   
-  yl <- c(-0.2,0.35)
+  yl <- c(-15,50)
   plot(coef_s[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Connectivity", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_s_li[ord], 1:p, coef_s_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_s[ord], pch = 19, col = bugcolors, cex = 1.5)
   
-  yl <- c(-0.45,0.75)
+  yl <- c(-20,100)
   plot(coef_atb[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Antibiotic use", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
@@ -224,28 +226,28 @@ svg(file = "glm_global_pane2.svg", 1.9, 6)
   p <- length(coef_ps.b)
   xl <- c(0.75, 4.25)
   
-  yl <- c(-1.5,1.5)
+  yl <- c(-100,250)
   plot(coef_ps.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_ps_li.b[ord], 1:p, coef_ps_ui.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_ps.b[ord], pch = 19, col = bugcolors.b, cex = 1.5)
   
-  yl <- c(-1.5,1.5)
+  yl <- c(-75,150)
   plot(coef_n.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_n_li.b[ord], 1:p, coef_n_ui.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_n.b[ord], pch = 19, col = bugcolors.b, cex = 1.5)
   
-  yl <- c(-0.75, 0.75)
+  yl <- c(-30, 90)
   plot(coef_s.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_s_li.b[ord], 1:p, coef_s_ui.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_s.b[ord], pch = 19, col = bugcolors.b, cex = 1.5)
   
-  yl <- c(-1,1.1)
+  yl <- c(-25,150)
   plot(coef_atb.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
