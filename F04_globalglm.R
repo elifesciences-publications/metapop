@@ -19,22 +19,27 @@ library(data.table)
 
 load(file = "modeldata.Rdata") # Output from F03_modeldataprep.R
 
-#Begin with "transf.dat" from F03 script.
-head(transf.dat)
+#Begin with "transf.dat.factor" from F03 script.
+head(transf.dat.factor)
 
 #First identify each unit for the for-loop
-taxonName <- unique(transf.dat$BacType)
+taxonName <- unique(transf.dat.factor$BacType)
 
 # Store per-variant model results in a list
 ResultList<-list()
 
 # Loop over variants and populate ResultList
 for(i in 1:length(taxonName)){
-  selTaxon<-which(transf.dat$BacType == taxonName[i]) #Divide the data,
+  selTaxon<-which(transf.dat.factor$BacType == taxonName[i]) #Divide the data,
   # this variable will be called to identify each subset of the data
   
+  ###### FACTOR CASE: VREF, not enough PatStat1 observations, exclude
+  if(taxonName[i] == "ENCFAC_VANCO_R") {
+    selTaxon<-which(transf.dat.factor$BacType == taxonName[i] & transf.dat.factor$PatStat != "1")
+  }
+
   # Run Poisson GLM
-  metab = glm(N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat,subset=selTaxon, family=quasipoisson)
+  metab = glm(N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat.factor,subset=selTaxon, family=quasipoisson)
   
   # Model summary
   summary <- summary(metab)
@@ -55,6 +60,13 @@ for(i in 1:length(taxonName)){
   # Concatenate beta estimates and 95% CIs
   betas.cis <- cbind(percents.beta,percents.ci)
   
+  ######## FACTOR CASE: VREF; preserve order of coefficients
+  if(taxonName[i] == "ENCFAC_VANCO_R") {
+    betas <- c(head(betas, 5), PatStat1 = NA, tail(betas, 1))
+    ci95 <- rbind(head(ci95, 5), PatStat1 = c(NA, NA), tail(ci95, 1))
+    betas.cis <- rbind(head(betas.cis, 5), PatStat1 = c(NA, NA, NA), tail(betas.cis, 1))
+  }
+  
   # Gather results
   resList<-list(
     name = paste(taxonName[i]),
@@ -70,8 +82,9 @@ for(i in 1:length(taxonName)){
 }
 
 # Use the [[]] operator to access individual results
-ResultList[[5]]$name
-ResultList[[5]]$betas.cis
+ResultList[[16]]$name
+ResultList[[16]]$summary
+
 
 ##################################################################################################
 # Figure 1 of percent change represented by beta coefficients 
@@ -107,30 +120,44 @@ beta.cisList.b <- beta.cisList[c(12,13,14,15)]
   coef_n_li <- unlist(lapply(beta.cisList.a, function(x) x[grep("n_beds", rownames(x)),2]))
   coef_n_ui <- unlist(lapply(beta.cisList.a, function(x) x[grep("n_beds", rownames(x)),3]))
   
-  #Patient fragility (ward type)
-  coef_ps    <- unlist(lapply(beta.cisList.a, function(x) x[grep("PatStat", rownames(x)),1]))
-  coef_ps_li <-  unlist(lapply(beta.cisList.a, function(x) x[grep("PatStat", rownames(x)),2]))
-  coef_ps_ui <-  unlist(lapply(beta.cisList.a, function(x) x[grep("PatStat", rownames(x)),3]))
+  #Patient fragility (ward type) Category 1
+  coef_ps1    <- unlist(lapply(beta.cisList.a, function(x) x[grep("PatStat1", rownames(x)),1]))
+  coef_ps_li1 <-  unlist(lapply(beta.cisList.a, function(x) x[grep("PatStat1", rownames(x)),2]))
+  coef_ps_ui1 <-  unlist(lapply(beta.cisList.a, function(x) x[grep("PatStat1", rownames(x)),3]))
+  
+  #Patient fragility (ward type) Category 2
+  coef_ps2    <- unlist(lapply(beta.cisList.a, function(x) x[grep("PatStat2", rownames(x)),1]))
+  coef_ps_li2 <-  unlist(lapply(beta.cisList.a, function(x) x[grep("PatStat2", rownames(x)),2]))
+  coef_ps_ui2 <-  unlist(lapply(beta.cisList.a, function(x) x[grep("PatStat2", rownames(x)),3]))
   
 }
 
 # Repeat for Abau and Efae
 {
+  #Antibiotic consumption
   coef_atb.b    <- unlist(lapply(beta.cisList.b, function(x) x[grep("ddd_total", rownames(x)),1]))
   coef_atb_li.b <- unlist(lapply(beta.cisList.b, function(x) x[grep("ddd_total", rownames(x)),2]))
   coef_atb_ui.b <- unlist(lapply(beta.cisList.b, function(x) x[grep("ddd_total", rownames(x)),3]))
   
+  #Connectivity
   coef_s.b    <- unlist(lapply(beta.cisList.b, function(x) x[grep("S_connectivity", rownames(x)),1]))
   coef_s_li.b <-  unlist(lapply(beta.cisList.b, function(x) x[grep("S_connectivity", rownames(x)),2]))
   coef_s_ui.b <-  unlist(lapply(beta.cisList.b, function(x) x[grep("S_connectivity", rownames(x)),3]))
   
+  #Number of beds
   coef_n.b    <- unlist(lapply(beta.cisList.b, function(x) x[grep("n_beds", rownames(x)),1]))
   coef_n_li.b <- unlist(lapply(beta.cisList.b, function(x) x[grep("n_beds", rownames(x)),2]))
   coef_n_ui.b <- unlist(lapply(beta.cisList.b, function(x) x[grep("n_beds", rownames(x)),3]))
   
-  coef_ps.b    <- unlist(lapply(beta.cisList.b, function(x) x[grep("PatStat", rownames(x)),1]))
-  coef_ps_li.b <-  unlist(lapply(beta.cisList.b, function(x) x[grep("PatStat", rownames(x)),2]))
-  coef_ps_ui.b <-  unlist(lapply(beta.cisList.b, function(x) x[grep("PatStat", rownames(x)),3]))
+  #Patient fragility (ward type) Category 1
+  coef_ps1.b    <- unlist(lapply(beta.cisList.b, function(x) x[grep("PatStat1", rownames(x)),1]))
+  coef_ps_li1.b <-  unlist(lapply(beta.cisList.b, function(x) x[grep("PatStat1", rownames(x)),2]))
+  coef_ps_ui1.b <-  unlist(lapply(beta.cisList.b, function(x) x[grep("PatStat1", rownames(x)),3]))
+  
+  #Patient fragility (ward type) Category 2
+  coef_ps2.b    <- unlist(lapply(beta.cisList.b, function(x) x[grep("PatStat2", rownames(x)),1]))
+  coef_ps_li2.b <-  unlist(lapply(beta.cisList.b, function(x) x[grep("PatStat2", rownames(x)),2]))
+  coef_ps_ui2.b <-  unlist(lapply(beta.cisList.b, function(x) x[grep("PatStat2", rownames(x)),3]))
   
 }
 
@@ -164,7 +191,7 @@ errorbar_width <- 0.04
 # Generate Figure 1
 
 # Panel 1 (Figure 1a) - all taxa except Abau and Efae
-svg(file = "glm_global_pane1.svg", 4, 6)
+svg(file = "glm_global_pane1.fact.svg", 4, 6)
 {
   showpanes <- function(yl) {
     rect(0.75,  yl[1], 3.25,  yl[2], col = rgb(0.9,0.9,0.9,0.3), border = NA)
@@ -174,17 +201,25 @@ svg(file = "glm_global_pane1.svg", 4, 6)
     rect(11.75, yl[1], 13.25, yl[2], col = rgb(0.9,0.9,0.9,0.3), border = NA)
   }
   
-  par(mfrow = c(5,1))
+  par(mfrow = c(6,1))
   par(mar = c(1,4,1,4))
   
-  p <- length(coef_ps)
+  p <- length(coef_ps1)
   
-  yl <- c(-50,110)
-  plot(coef_ps[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
+  yl <- c(-100,350)
+  plot(coef_ps2[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
-  arrows(1:p, coef_ps_li[ord], 1:p, coef_ps_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
-  points(coef_ps[ord], pch = 19, col = bugcolors, cex = 1.5)
+  arrows(1:p, coef_ps_li2[ord], 1:p, coef_ps_ui2[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
+  points(coef_ps2[ord], pch = 19, col = bugcolors, cex = 1.5)
+  
+  yl <- c(-200,1000)
+  plot(coef_ps1[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
+  showpanes(yl)
+  
+  abline(0,0, lty = 2, col = "lightgrey")
+  arrows(1:p, coef_ps_li1[ord], 1:p, coef_ps_ui1[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
+  points(coef_ps1[ord], pch = 19, col = bugcolors, cex = 1.5)
   
   yl <- c(-60,50)
   plot(coef_n[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward size", bty = "n", type = "n")
@@ -193,7 +228,7 @@ svg(file = "glm_global_pane1.svg", 4, 6)
   arrows(1:p, coef_n_li[ord], 1:p, coef_n_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_n[ord], pch = 19, col = bugcolors, cex = 1.5)
   
-  yl <- c(-15,50)
+  yl <- c(-15,40)
   plot(coef_s[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Connectivity", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
@@ -215,7 +250,7 @@ dev.off()
 # Panel 2 (Figure 1b) - Abau and Efae
 svg(file = "glm_global_pane2.svg", 1.9, 6)
 {
-  par(mfrow = c(5,1))
+  par(mfrow = c(6,1))
   par(mar = c(1,4,1,4))
   
   showpanes <- function(yl) {
@@ -223,17 +258,25 @@ svg(file = "glm_global_pane2.svg", 1.9, 6)
     rect(2.75,  yl[1], 4.25,  yl[2], col = rgb(0.9,0.9,0.9,0.3), border = NA)
   }
   
-  p <- length(coef_ps.b)
+  p <- length(coef_ps1.b)
   xl <- c(0.75, 4.25)
   
-  yl <- c(-100,250)
-  plot(coef_ps.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
+  yl <- c(-150,1100)
+  plot(coef_ps2.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
-  arrows(1:p, coef_ps_li.b[ord], 1:p, coef_ps_ui.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
-  points(coef_ps.b[ord], pch = 19, col = bugcolors.b, cex = 1.5)
+  arrows(1:p, coef_ps_li2.b[ord], 1:p, coef_ps_ui2.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
+  points(coef_ps2.b[ord], pch = 19, col = bugcolors.b, cex = 1.5)
   
-  yl <- c(-75,150)
+  
+  yl <- c(-120,500)
+  plot(coef_ps1.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
+  showpanes(yl)
+  abline(0,0, lty = 2, col = "lightgrey")
+  arrows(1:p, coef_ps_li1.b[ord], 1:p, coef_ps_ui1.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
+  points(coef_ps1.b[ord], pch = 19, col = bugcolors.b, cex = 1.5)
+  
+  yl <- c(-80,150)
   plot(coef_n.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")

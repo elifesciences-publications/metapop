@@ -61,11 +61,15 @@ join2 <- full_join(join1, S.dat, by= c("BacType"="BacType","ward"="ward"))
 # Join this data frame to the ward data
 mod.dat.raw <- full_join(join2, ward.dat, by="ward")
 
+#Convert the ward type variable ("PatStat") to a factor
+mod.dat.raw.factor <- mod.dat.raw %>%
+  mutate(PatStat = factor(PatStat))
+
 
 #Before running models, transform the response variables using a log-2 transformation
 
 #Change data.frame to a data.table
-mod.dat.raw.dt <- data.table(mod.dat.raw)
+mod.dat.raw.dt <- data.table(mod.dat.raw.factor)
 
 #Select the columns that will be transformed
 logVars <- c("C_control", "S_connectivity","ddd_total","ddd_carba", "ddd_c1g_c2g",
@@ -75,10 +79,11 @@ logVars <- c("C_control", "S_connectivity","ddd_total","ddd_carba", "ddd_c1g_c2g
 #To avoid infinity values from log-transformation, 
 #first convert all 0 values to 1/2 the non-zero minimum value
 #Then apply a log-2 transformation
-transf.dat <- mod.dat.raw.dt [ , (logVars) := lapply(.SD, function(x) {
+transf.dat.factor <- mod.dat.raw.dt [ , (logVars) := lapply(.SD, function(x) {
   xmin <- min(x[x > 0])
   x[x < xmin] <- xmin / 2
   return(log2(x))
 }) , .SDcol = logVars]
 
-save(transf.dat, mod.dat.raw, file = "modeldata.Rdata")
+
+save(transf.dat.factor, mod.dat.raw.factor, file = "modeldata.Rdata")

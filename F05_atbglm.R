@@ -21,23 +21,23 @@ library(MASS)
 
 load(file = "modeldata.Rdata") # Output from F03_modeldataprep.R
 
-head(transf.dat)
+head(transf.dat.factor)
 
 # Identify variant names
-taxonName<-unique(transf.dat$BacType)
+taxonName<-unique(transf.dat.factor$BacType)
 
 # Store per-variant model results in a list
 ResultList2<-list()
 
 # Loop over variants and populate ResultList2
 for(i in 1:length(taxonName)){
-  selTaxon<-which(transf.dat$BacType == taxonName[i])
+  selTaxon<-which(transf.dat.factor$BacType == taxonName[i])
   
   # Fit quasi-Poisson GLM
   metab = glm(N_patients ~ C_control + S_connectivity + ddd_carba + ddd_c1g_c2g
               + ddd_c3g_classic + ddd_c3g_pyo + ddd_glyco + ddd_oxa
               + ddd_fq + ddd_bsp + ddd_nsp + ddd_amin + ddd_amox, 
-              data = transf.dat,subset=selTaxon, family = quasipoisson)
+              data = transf.dat.factor,subset=selTaxon, family = quasipoisson)
 
   # Model summary
   summary <- summary(metab)

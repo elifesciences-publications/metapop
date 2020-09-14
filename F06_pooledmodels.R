@@ -4,7 +4,7 @@
 #' 
 #' Shapiro et al. 2019
 #' (c) Jean-Philippe Rasigade, Julie T Shapiro
-#' Université Claude Bernard Lyon 1
+#' UniversitÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ© Claude Bernard Lyon 1
 #' CIRI Inserm U1111
 #' 
 #' MIT LICENSE
@@ -18,9 +18,9 @@ library(data.table) # Tested with version 1.12.2 for R version 3.6.0
 library(dplyr)      # Tested with version 0.8.0.1 for R version 3.6.0
 library(visreg)     #Tested with version 2.5-0 for R version 3.6.0
 
-#Begin with dataframe "mod.dat.raw" from F03 script
+#Begin with dataframe "mod.dat.raw.factor" from F03 script
 load("modeldata.Rdata")
-head(mod.dat.raw)
+head(mod.dat.raw.factor)
 
 # List of 3GCR taxa
 c3gR.list <- c("ESCCOL_C3G_R", "KLEPNE_C3G_R","KLEPNE_CARBA_R",
@@ -29,7 +29,7 @@ c3gR.list <- c("ESCCOL_C3G_R", "KLEPNE_C3G_R","KLEPNE_CARBA_R",
                "STAAUR_OXA_R")
 
 # Subset the data to include only taxa in the c3gR.list 
-c3gR.dat.raw <- subset(mod.dat.raw, BacType %in% c3gR.list)
+c3gR.dat.raw <- subset(mod.dat.raw.factor, BacType %in% c3gR.list)
 
 # Sum N_patients, C_control, and S_connectivity of different variants by ward
 c3gR.dat.raw2 <- c3gR.dat.raw %>%
@@ -39,7 +39,10 @@ c3gR.dat.raw2 <- c3gR.dat.raw %>%
             S_connC3G = sum(S_connectivity))
 
 # Select ward-level variables
-# NOTE: Detach package MASS (conflicts with dplyr) if code below produces error
+#######################################################################
+# IMPORTANT NOTE: Detach package MASS (conflicts with dplyr) if code 
+# below produces error
+#######################################################################
 ddd.dat.c3g <- select(c3gR.dat.raw, ward, n_beds, PatStat,  starts_with("ddd_"))
 ddd.dat.c3g <- distinct(ddd.dat.c3g)
 
@@ -81,15 +84,15 @@ c3gR.mod2 <- glm(N_patsC3G ~ C_controlC3G + S_connC3G +
 #' models for all Carbapenem resistant (CR) taxa pooled together.
 #' 
 
-#Begin with dataframe "mod.dat.raw" from F03 script
-head(mod.dat.raw)
+#Begin with dataframe "mod.dat.raw.factor" from F03 script
+head(mod.dat.raw.factor)
 
 # List of CR taxa
 carbaR.list <-c("ESCCOL_CARBA_R","KLEPNE_CARBA_R","ENTCLO_CARBA_R","PSEAER_CARBA_R","ACIBAU_CARBA_R",
                 "ENCFAC_VANCO_S","ENCFAC_VANCO_R","STAAUR_OXA_R")
 
 # Subset the data to include only taxa in the carbaR.list 
-carbaR.dat.raw <- subset(mod.dat.raw, BacType %in% carbaR.list)
+carbaR.dat.raw <- subset(mod.dat.raw.factor, BacType %in% carbaR.list)
 
 # Sum N_patients, C_control, and S_connectivity of different variants by ward
 carbaR.dat.raw2 <- carbaR.dat.raw %>%
@@ -174,20 +177,27 @@ names(coef.combined.atbs) <- c("C3GR","CarbaR")
 # Extract from each list (3GCR and CR) the beta coefficient and lower and upper confidence intervals
 # for each variable
 {
-  coef_ps <- unlist(lapply(coef.combined.simp, function(x) x[grep("PatStat", rownames(x)),3]))
-  coef_ps_li <- unlist(lapply(coef.combined.simp, function(x) x[grep("PatStat", rownames(x)),1]))
-  coef_ps_ui <- unlist(lapply(coef.combined.simp, function(x) x[grep("PatStat", rownames(x)),2]))
+  # Patient fragility (ward type) Category 1
+  coef_ps1 <- unlist(lapply(coef.combined.simp, function(x) x[grep("PatStat1", rownames(x)),3]))
+  coef_ps_li1 <- unlist(lapply(coef.combined.simp, function(x) x[grep("PatStat1", rownames(x)),1]))
+  coef_ps_ui1 <- unlist(lapply(coef.combined.simp, function(x) x[grep("PatStat1", rownames(x)),2]))
   
+  # Patient fragility (ward type) Category 2
+  coef_ps2 <- unlist(lapply(coef.combined.simp, function(x) x[grep("PatStat2", rownames(x)),3]))
+  coef_ps_li2 <- unlist(lapply(coef.combined.simp, function(x) x[grep("PatStat2", rownames(x)),1]))
+  coef_ps_ui2 <- unlist(lapply(coef.combined.simp, function(x) x[grep("PatStat2", rownames(x)),2]))
   
+  # Number of beds (Ward size)
   coef_n <- unlist(lapply(coef.combined.simp, function(x) x[grep("n_beds", rownames(x)),3]))
   coef_n_li <- unlist(lapply(coef.combined.simp, function(x) x[grep("n_beds", rownames(x)),1]))
   coef_n_ui <- unlist(lapply(coef.combined.simp, function(x) x[grep("n_beds", rownames(x)),2]))
   
-  
+  # Connectivity
   coef_s <- unlist(lapply(coef.combined.simp, function(x) x[grep("S_", rownames(x)),3]))
   coef_s_li <- unlist(lapply(coef.combined.simp, function(x) x[grep("S_", rownames(x)),1]))
   coef_s_ui <- unlist(lapply(coef.combined.simp, function(x) x[grep("S_", rownames(x)),2]))
   
+  # Antibiotic consumption
   coef_atb <- unlist(lapply(coef.combined.simp, function(x) x[grep("ddd_total", rownames(x)),3]))
   coef_atb_li <- unlist(lapply(coef.combined.simp, function(x) x[grep("ddd_total", rownames(x)),1]))
   coef_atb_ui <- unlist(lapply(coef.combined.simp, function(x) x[grep("ddd_total", rownames(x)),2])) 
@@ -206,16 +216,22 @@ svg(file = "glm_pooled_pane1.svg", 1.5, 6)
 {
   p <- length(coef.combined.simp)
   
-  par(mfrow = c(5,1))
+  par(mfrow = c(6,1))
   par(mar = c(1,4,1,4))
   xl <- c(0.75, 2.25)
   marker.cex <- 1.25
-  
-  yl <- c(-15,20)
-  plot(coef_ps[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
+
+  yl <- c(-40,50)
+  plot(coef_ps2[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
   abline(0,0, lty = 2, col = "lightgrey")
-  arrows(1:p, coef_ps_li[ord], 1:p, coef_ps_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
-  points(coef_ps[ord], pch = 19, col = bugcols, cex = marker.cex)
+  arrows(1:p, coef_ps_li2[ord], 1:p, coef_ps_ui2[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
+  points(coef_ps2[ord], pch = 19, col = bugcols, cex = marker.cex)
+  
+  yl <- c(-20,100)
+  plot(coef_ps1[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
+  abline(0,0, lty = 2, col = "lightgrey")
+  arrows(1:p, coef_ps_li1[ord], 1:p, coef_ps_ui1[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
+  points(coef_ps1[ord], pch = 19, col = bugcols, cex = marker.cex)
   
   yl <- c(-15,15)
   plot(coef_n[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Ward size", bty = "n", type = "n")
@@ -247,9 +263,11 @@ dev.off()
 
 #Print the percentage change represented by beta coefficients and confidence interval for each
 prettyConfint <- function(response, drug) {
-  beta <- sprintf("� = %.1f (%.1f, %.1f)", coef.combined.atbs[[response]][drug, 3], coef.combined.atbs[[response]][drug, 1], coef.combined.atbs[[response]][drug, 2])
- 
-}  
+  beta <- sprintf("β = %.1f (%.1f, %.1f)", coef.combined.atbs[[response]][drug, 3], coef.combined.atbs[[response]][drug, 1], coef.combined.atbs[[response]][drug, 2])
+  
+} 
+# NOTE - due to encoding the beta symbol above may be changed
+# to another symbol when saving / reopening file. Copy-paste beta symbol to correct.
 
 svg(file = "visreg_pooled.svg", 6, 6)
 {
@@ -326,9 +344,9 @@ dev.off()
 # Calculate the model coefficients for pooled 3GCR and Carba-R 
 # infections:
 
-#Begin with dataframe "mod.dat.raw" from F03 script
+#Begin with dataframe "mod.dat.raw.factor" from F03 script
 load("modeldata.Rdata")
-head(mod.dat.raw)
+head(mod.dat.raw.factor)
 
 # Make a list of all taxa that are resistant to either 3GC or carbapenems
 c3g.carb.list <- c("ESCCOL_C3G_R","ESCCOL_CARBA_R", "KLEPNE_C3G_R",
@@ -338,7 +356,7 @@ c3g.carb.list <- c("ESCCOL_C3G_R","ESCCOL_CARBA_R", "KLEPNE_C3G_R",
                 "STAAUR_OXA_R")
 
 # Subset the data to include only taxa in the c3g.carb.list 
-c3gR.carb.dat.raw <- subset(mod.dat.raw, BacType %in% c3g.carb.list)
+c3gR.carb.dat.raw <- subset(mod.dat.raw.factor, BacType %in% c3g.carb.list)
 
 # Sum N_patients, C_control, and S_connectivity of different variants by ward
 c3gR.carb.dat.raw2 <- c3gR.carb.dat.raw %>%

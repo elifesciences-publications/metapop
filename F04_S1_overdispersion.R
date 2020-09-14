@@ -21,7 +21,7 @@ library(MASS)
 load(file = "modeldata.Rdata") # Output from F03_modeldataprep.R
 
 logliklist <- list()
-taxonName <- unique(transf.dat$BacType)
+taxonName <- unique(transf.dat.factor$BacType)
 
 #' For each variant, fit a regular Poisson model, a quasi-Poisson model (which estimates under/overdispersion
 #' through its theta parameter) and a negative binomial model. We keep track of the log-likelihoods of
@@ -29,19 +29,19 @@ taxonName <- unique(transf.dat$BacType)
 #' cannot directly compare the quasi-Poisson and negative binomial models.
 for(i in 1:length(taxonName)){
   print(taxonName[i])
-  selTaxon<-which(transf.dat$BacType == taxonName[i]) #Divide the data,
+  selTaxon<-which(transf.dat.factor$BacType == taxonName[i]) #Divide the data,
   # this variable will be called to identify each subset of the data
   
   mod_poisson <- glm(
-    N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat,subset=selTaxon,
+    N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat.factor,subset=selTaxon,
     family=poisson)
 
   mod_quasi <- glm(
-    N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat,subset=selTaxon,
+    N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat.factor,subset=selTaxon,
     family=quasipoisson)
   
   mod_negbin <- glm.nb(
-    N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat,subset=selTaxon)
+    N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat.factor,subset=selTaxon)
   
   logLik(mod_negbin)
   
