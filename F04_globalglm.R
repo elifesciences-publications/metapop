@@ -33,13 +33,16 @@ for(i in 1:length(taxonName)){
   selTaxon<-which(transf.dat.factor$BacType == taxonName[i]) #Divide the data,
   # this variable will be called to identify each subset of the data
   
-  ###### FACTOR CASE: VREF, not enough PatStat1 observations, exclude
-  if(taxonName[i] == "ENCFAC_VANCO_R") {
-    selTaxon<-which(transf.dat.factor$BacType == taxonName[i] & transf.dat.factor$PatStat != "1")
-  }
+  ###### FACTOR CASE: not enough observations, exclude
+  
 
-  # Run Poisson GLM
-  metab = glm(N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat.factor,subset=selTaxon, family=quasipoisson)
+  if(taxonName[i] %in% c("ACIBAU_CARBA_R", "ENCFAC_VANCO_R", "ESCCOL_CARBA_R")) {
+    metab = glm(N_patients ~ C_control + S_connectivity + n_beds + ddd_total, data = transf.dat.factor,subset=selTaxon, family=quasipoisson)
+    
+  } else {# Run Poisson GLM
+    metab = glm(N_patients ~ C_control + S_connectivity + n_beds + ddd_total + PatStat, data = transf.dat.factor,subset=selTaxon, family=quasipoisson)
+    
+  }
   
   # Model summary
   summary <- summary(metab)
@@ -60,11 +63,11 @@ for(i in 1:length(taxonName)){
   # Concatenate beta estimates and 95% CIs
   betas.cis <- cbind(percents.beta,percents.ci)
   
-  ######## FACTOR CASE: VREF; preserve order of coefficients
-  if(taxonName[i] == "ENCFAC_VANCO_R") {
-    betas <- c(head(betas, 5), PatStat1 = NA, tail(betas, 1))
-    ci95 <- rbind(head(ci95, 5), PatStat1 = c(NA, NA), tail(ci95, 1))
-    betas.cis <- rbind(head(betas.cis, 5), PatStat1 = c(NA, NA, NA), tail(betas.cis, 1))
+  ######## FACTOR CASE: CREC, CRAB, VREF; preserve order of coefficients
+  if(taxonName[i] %in% c("ENCFAC_VANCO_R", "ESCCOL_CARBA_R", "ACIBAU_CARBA_R")) {
+    betas <- c(head(betas, 5), PatStat1 = NA, PatStat2 = NA)
+    ci95 <- rbind(head(ci95, 5), PatStat1 = c(NA, NA), PatStat2 = c(NA, NA))
+    betas.cis <- rbind(head(betas.cis, 5), PatStat1 = c(NA, NA, NA), PatStat2 = c(NA, NA, NA))
   }
   
   # Gather results
@@ -82,8 +85,8 @@ for(i in 1:length(taxonName)){
 }
 
 # Use the [[]] operator to access individual results
-ResultList[[16]]$name
-ResultList[[16]]$summary
+ResultList[[1]]$name
+ResultList[[1]]$summary
 
 
 ##################################################################################################
@@ -191,7 +194,7 @@ errorbar_width <- 0.04
 # Generate Figure 1
 
 # Panel 1 (Figure 1a) - all taxa except Abau and Efae
-svg(file = "glm_global_pane1.fact.svg", 4, 6)
+svg(file = "glm_global_pane1.svg", 3.5, 6)
 {
   showpanes <- function(yl) {
     rect(0.75,  yl[1], 3.25,  yl[2], col = rgb(0.9,0.9,0.9,0.3), border = NA)
@@ -204,17 +207,19 @@ svg(file = "glm_global_pane1.fact.svg", 4, 6)
   par(mfrow = c(6,1))
   par(mar = c(1,4,1,4))
   
-  p <- length(coef_ps1)
+  p <- length(coef_atb)
   
-  yl <- c(-100,350)
-  plot(coef_ps2[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
+  yl <- c(-100,200)
+  plot(coef_ps2[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Intensive care", bty = "n", type = "n", yaxt = "n")
+  axis(2, at = c(-100, 0, 100, 200), labels = c(-100, 0, 100, 200))
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_ps_li2[ord], 1:p, coef_ps_ui2[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_ps2[ord], pch = 19, col = bugcolors, cex = 1.5)
   
-  yl <- c(-200,1000)
-  plot(coef_ps1[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
+  yl <- c(-200,600)
+  plot(coef_ps1[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Progressive care", bty = "n", type = "n", yaxt = "n")
+  axis(2, at = c(-200, 200, 600))
   showpanes(yl)
   
   abline(0,0, lty = 2, col = "lightgrey")
@@ -222,21 +227,24 @@ svg(file = "glm_global_pane1.fact.svg", 4, 6)
   points(coef_ps1[ord], pch = 19, col = bugcolors, cex = 1.5)
   
   yl <- c(-60,50)
-  plot(coef_n[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward size", bty = "n", type = "n")
+  plot(coef_n[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Ward size", bty = "n", type = "n", yaxt = "n")
+  axis(2, at = c(-40, 0, 40))
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_n_li[ord], 1:p, coef_n_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_n[ord], pch = 19, col = bugcolors, cex = 1.5)
   
-  yl <- c(-15,40)
-  plot(coef_s[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Connectivity", bty = "n", type = "n")
+  yl <- c(-20,40)
+  plot(coef_s[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Connectivity", bty = "n", type = "n", yaxt = "n")
+  axis(2, at = c(-20, 0, 20, 40))
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_s_li[ord], 1:p, coef_s_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_s[ord], pch = 19, col = bugcolors, cex = 1.5)
   
   yl <- c(-20,100)
-  plot(coef_atb[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Antibiotic use", bty = "n", type = "n")
+  plot(coef_atb[ord], ylim = yl, xaxt = "n", xlab = "", ylab = "Antibiotic use", bty = "n", type = "n", yaxt = "n")
+  axis(2, at = c(0, 50, 100))
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_atb_li[ord], 1:p, coef_atb_ui[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
@@ -248,7 +256,7 @@ dev.off()
 
 
 # Panel 2 (Figure 1b) - Abau and Efae
-svg(file = "glm_global_pane2.svg", 1.9, 6)
+svg(file = "glm_global_pane2.svg", 1.66, 6)
 {
   par(mfrow = c(6,1))
   par(mar = c(1,4,1,4))
@@ -261,16 +269,18 @@ svg(file = "glm_global_pane2.svg", 1.9, 6)
   p <- length(coef_ps1.b)
   xl <- c(0.75, 4.25)
   
-  yl <- c(-150,1100)
-  plot(coef_ps2.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
+  yl <- c(-100, 120)
+  plot(coef_ps2.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n", yaxt = "n")
+  axis(2, at = c(-100, 0, 100))
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_ps_li2.b[ord], 1:p, coef_ps_ui2.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_ps2.b[ord], pch = 19, col = bugcolors.b, cex = 1.5)
   
   
-  yl <- c(-120,500)
-  plot(coef_ps1.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
+  yl <- c(-100,200)
+  plot(coef_ps1.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n", yaxt = "n")
+  axis(2, at = c(-100, 0, 100, 200))
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_ps_li1.b[ord], 1:p, coef_ps_ui1.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
@@ -284,14 +294,16 @@ svg(file = "glm_global_pane2.svg", 1.9, 6)
   points(coef_n.b[ord], pch = 19, col = bugcolors.b, cex = 1.5)
   
   yl <- c(-30, 90)
-  plot(coef_s.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
+  plot(coef_s.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n", yaxt = "n")
+  axis(2, at = c(-20, 0, 20, 40, 60, 80))
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_s_li.b[ord], 1:p, coef_s_ui.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_s.b[ord], pch = 19, col = bugcolors.b, cex = 1.5)
   
-  yl <- c(-25,150)
-  plot(coef_atb.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n")
+  yl <- c(-20,150)
+  plot(coef_atb.b[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "", bty = "n", type = "n", yaxt = "n")
+  axis(2, at = c(0, 50, 100, 150))
   showpanes(yl)
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_atb_li.b[ord], 1:p, coef_atb_ui.b[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")

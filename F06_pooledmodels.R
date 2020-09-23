@@ -4,7 +4,7 @@
 #' 
 #' Shapiro et al. 2019
 #' (c) Jean-Philippe Rasigade, Julie T Shapiro
-#' UniversitÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ© Claude Bernard Lyon 1
+#' Université Claude Bernard Lyon 1
 #' CIRI Inserm U1111
 #' 
 #' MIT LICENSE
@@ -222,13 +222,13 @@ svg(file = "glm_pooled_pane1.svg", 1.5, 6)
   marker.cex <- 1.25
 
   yl <- c(-40,50)
-  plot(coef_ps2[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
+  plot(coef_ps2[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Intensive care", bty = "n", type = "n")
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_ps_li2[ord], 1:p, coef_ps_ui2[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_ps2[ord], pch = 19, col = bugcols, cex = marker.cex)
   
   yl <- c(-20,100)
-  plot(coef_ps1[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Ward type", bty = "n", type = "n")
+  plot(coef_ps1[ord], xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Progressive care", bty = "n", type = "n")
   abline(0,0, lty = 2, col = "lightgrey")
   arrows(1:p, coef_ps_li1[ord], 1:p, coef_ps_ui1[ord], length = errorbar_width, angle = 90, code = 3, col = "darkgrey")
   points(coef_ps1[ord], pch = 19, col = bugcols, cex = marker.cex)
