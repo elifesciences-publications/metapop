@@ -1,10 +1,29 @@
-#######Correlation figures ########################
-### Need to make correlation figure with Control on X axis vs. on Y axis:
+#' #############################################################
+#' Metapopulation ecology links antibiotic resistance, consumption
+#' and patient transfers in a network of hospital wards
+#' 
+#' Shapiro et al. 2019
+#' (c) Jean-Philippe Rasigade, Julie T Shapiro
+#' Université Claude Bernard Lyon 1
+#' CIRI Inserm U1111
+#' 
+#' MIT LICENSE
+#' 
+#' #############################################################
+
+# Creates Figure 1 - figure supplements 3 - 6 
+# (Correlations between incidence control, infection incidence,
+# antibiotic use, and connectivity) 
+
+
+### Make correlation figures with Control on X axis vs. on Y axis:
 ### 1. Occurence of each variant
 ### 2. Use of each antibiotic
 ### 3. Use of total antibiotics
 ### 4. Connectivity
 ### -> Include coefficient of correlation
+
+library(tidyverse)
 
 ## Labels for each plot
 buglabels <- list(ESCCOL_S = "EC",
@@ -23,9 +42,9 @@ buglabels <- list(ESCCOL_S = "EC",
 ########################################
 ### Begin with raw data ######
 
-head(mod.dat.raw) # From F01_dataprep
+head(mod.dat.raw.factor) # From F01_dataprep
 
-raw.dat <- mod.dat.raw
+raw.dat <- mod.dat.raw.factor
 head(raw.dat)
 
 # Total ATB use (is currently in ddd per bed)
@@ -44,7 +63,9 @@ head(raw.dat3)
 ##################################################################
 ###### Figures for Log-transformed data, with axes "libre" #######
 
-## Fig S2 - Control Vs. Incidence 
+###############################################
+## Fig S3 - Control Vs. Incidence 
+###############################################
 ##Labels
 xlabplot <- "log2 Incidence control"
 ylabplot <- "log2 No. episodes"
@@ -99,7 +120,9 @@ ylabplot <- "log2 No. episodes"
   dev.off()
 }##
 
-## Fig S3 - Control Vs. Antibiotic use 
+###############################################
+## Fig S4 - Control Vs. Antibiotic use 
+###############################################
 ##Labels
 xlabplot <- "log2 Incidence control"
 ylabplot <- "log2 Antibiotic use"
@@ -154,7 +177,9 @@ ylabplot <- "log2 Antibiotic use"
   dev.off()
 }##
 
-## Fig S4 - Antibiotic use Vs. Incidence 
+###############################################
+## Fig S5 - Antibiotic use Vs. Incidence
+###############################################
 ##Labels
 xlabplot <- "log2 Antibiotic use"
 ylabplot <- "log2 No. episodes"
@@ -209,7 +234,9 @@ ylabplot <- "log2 No. episodes"
   dev.off()
 }##
 
-## Fig S5 - Connectivity Vs. Incidence 
+###############################################
+## Fig S6 - Connectivity Vs. Incidence 
+###############################################
 ##Labels
 xlabplot <- "log2 Connectivity"
 ylabplot <- "log2 No. episodes"
